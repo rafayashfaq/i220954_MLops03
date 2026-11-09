@@ -97,7 +97,12 @@ class MLOpsAgentOrchestrator:
             self._log_audit(request_id, tool_name, "SUCCESS", duration_ms)
             
             # Convert pydantic models to dict if needed
-            data_payload = res.dict() if hasattr(res, "dict") else res
+            if hasattr(res, "model_dump"):
+                data_payload = res.model_dump()
+            elif hasattr(res, "dict"):
+                data_payload = res.dict()
+            else:
+                data_payload = res
             return ToolExecutionResult(
                 tool_name=tool_name,
                 status="SUCCESS",
