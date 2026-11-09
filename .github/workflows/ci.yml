@@ -48,6 +48,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Seed Baseline Pipeline & Model
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
+        run: |
+          python training/generate_data.py
+          python training/preprocess.py
+          python training/train.py --model-type logistic_regression
+
       - name: Run Pytest Suite
         env:
           MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
@@ -73,3 +81,4 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: mlops-prediction-api:latest
+
