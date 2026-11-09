@@ -1,6 +1,7 @@
 """
 Unit and safety tests for Task 3: Apache Airflow Workflow Agent.
 """
+
 import pytest
 from agent.tools import airflow_tools
 from agent.schemas import AirflowDagItem, AirflowDagRunStatus, AirflowTaskDiagnostic
@@ -37,9 +38,7 @@ def test_trigger_unapproved_dag_rejected():
 
 def test_get_task_diagnostics():
     diag = airflow_tools.get_task_diagnostics(
-        dag_id="mlops_churn_training_pipeline",
-        dag_run_id="run_failed_quality_002",
-        task_id="apply_model_quality_gate"
+        dag_id="mlops_churn_training_pipeline", dag_run_id="run_failed_quality_002", task_id="apply_model_quality_gate"
     )
     assert isinstance(diag, AirflowTaskDiagnostic)
     assert diag.task_id == "apply_model_quality_gate"

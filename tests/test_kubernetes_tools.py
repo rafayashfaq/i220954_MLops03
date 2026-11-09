@@ -1,6 +1,7 @@
 """
 Unit and safety tests for Task 4: Kubernetes Operations Agent.
 """
+
 import pytest
 from agent.tools import kubernetes_tools
 from agent.schemas import K8sDiagnosisReport, K8sStateChangeRequest
@@ -47,7 +48,7 @@ def test_unconfirmed_cluster_modification_rejected():
         operation="scale",
         target_resource="deployment/mlops-prediction-api",
         namespace="mlops-prod",
-        user_confirmed=False  # Missing confirmation!
+        user_confirmed=False,  # Missing confirmation!
     )
     with pytest.raises(PermissionError) as exc_info:
         kubernetes_tools.execute_cluster_state_change(req)
@@ -61,7 +62,7 @@ def test_confirmed_cluster_modification_allowed():
         operation="restart",
         target_resource="deployment/mlops-prediction-api",
         namespace="mlops-prod",
-        user_confirmed=True
+        user_confirmed=True,
     )
     res = kubernetes_tools.execute_cluster_state_change(req)
     assert res["status"] == "EXECUTED"

@@ -4,6 +4,7 @@ Integrates DVC, MLflow, Airflow, and Kubernetes tools into a unified reasoning a
 Coordinates multi-tool queries, correlates evidence, prevents hallucination,
 enforces safety policies, and produces structured analytical responses.
 """
+
 import datetime
 import json
 import logging
@@ -45,7 +46,6 @@ class MLOpsAgentOrchestrator:
             "dvc_compare_versions": dvc_tools.compare_dataset_versions,
             "dvc_detect_changes": dvc_tools.detect_data_changes,
             "dvc_explain_repro": dvc_tools.explain_reproduction,
-
             # MLflow Tools
             "mlflow_list_experiments": mlflow_tools.list_experiments,
             "mlflow_list_runs": mlflow_tools.list_runs,
@@ -53,14 +53,12 @@ class MLOpsAgentOrchestrator:
             "mlflow_best_candidate": mlflow_tools.get_best_run,
             "mlflow_compare_runs": mlflow_tools.compare_runs,
             "mlflow_model_registry": mlflow_tools.get_model_registry_details,
-
             # Airflow Tools
             "airflow_list_dags": airflow_tools.list_dags,
             "airflow_dag_run_status": airflow_tools.get_dag_run_status,
             "airflow_trigger_dag": airflow_tools.trigger_training_dag,
             "airflow_failed_tasks": airflow_tools.get_failed_tasks,
             "airflow_task_diagnostics": airflow_tools.get_task_diagnostics,
-
             # Kubernetes Tools
             "k8s_list_pods": kubernetes_tools.list_pods,
             "k8s_list_deployments": kubernetes_tools.list_deployments,
@@ -82,20 +80,14 @@ class MLOpsAgentOrchestrator:
         if tool_name not in self.tool_registry:
             err_msg = f"Tool '{tool_name}' is not registered in agent tool registry."
             self._log_audit(request_id, tool_name, "REJECTED", 0.0, error=err_msg)
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                status="ERROR",
-                duration_ms=0.0,
-                data=None,
-                error=err_msg
-            )
+            return ToolExecutionResult(tool_name=tool_name, status="ERROR", duration_ms=0.0, data=None, error=err_msg)
 
         fn = self.tool_registry[tool_name]
         try:
             res = fn(**kwargs)
             duration_ms = (time.time() - start_time) * 1000
             self._log_audit(request_id, tool_name, "SUCCESS", duration_ms)
-            
+
             # Convert pydantic models to dict if needed
             if hasattr(res, "model_dump"):
                 data_payload = res.model_dump()
@@ -104,10 +96,7 @@ class MLOpsAgentOrchestrator:
             else:
                 data_payload = res
             return ToolExecutionResult(
-                tool_name=tool_name,
-                status="SUCCESS",
-                duration_ms=round(duration_ms, 2),
-                data=data_payload
+                tool_name=tool_name, status="SUCCESS", duration_ms=round(duration_ms, 2), data=data_payload
             )
         except PermissionError as pe:
             duration_ms = (time.time() - start_time) * 1000
@@ -117,17 +106,13 @@ class MLOpsAgentOrchestrator:
                 status="ERROR",
                 duration_ms=round(duration_ms, 2),
                 data=None,
-                error=f"Permission Denied: {str(pe)}"
+                error=f"Permission Denied: {str(pe)}",
             )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             self._log_audit(request_id, tool_name, "FAILED", duration_ms, error=str(e))
             return ToolExecutionResult(
-                tool_name=tool_name,
-                status="ERROR",
-                duration_ms=round(duration_ms, 2),
-                data=None,
-                error=str(e)
+                tool_name=tool_name, status="ERROR", duration_ms=round(duration_ms, 2), data=None, error=str(e)
             )
 
     def _log_audit(self, request_id: str, tool_name: str, status: str, duration_ms: float, error: Optional[str] = None):
@@ -139,14 +124,14 @@ class MLOpsAgentOrchestrator:
             "status": status,
             "duration_ms": round(duration_ms, 2),
             "has_error": error is not None,
-            "error_summary": error[:200] if error else None
+            "error_summary": error[:200] if error else None,
         }
         # In a production system, this sends to stdout or logging daemon
         print(f"[AUDIT LOG] {json.dumps(audit_record)}")
 
     def run_mandatory_scenario(
         self,
-        query: str = "Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary."
+        query: str = "Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary.",
     ) -> MultiToolEvidence:
         """
         Executes the mandatory five-phase multi-tool integration scenario:
@@ -164,9 +149,11 @@ class MLOpsAgentOrchestrator:
         recommended_actions = []
 
         # Step 1: Query MLflow for best recent candidate
-        mlflow_res = self.execute_tool("mlflow_best_candidate", experiment_name="churn-prediction-pipeline", target_metric="f1_score")
+        mlflow_res = self.execute_tool(
+            "mlflow_best_candidate", experiment_name="churn-prediction-pipeline", target_metric="f1_score"
+        )
         tool_results.append(mlflow_res)
-        
+
         best_run_id = None
         best_metric_val = 0.0
         dvc_hash_tag = None
@@ -180,7 +167,7 @@ class MLOpsAgentOrchestrator:
             known_facts.append(
                 f"Best recent MLflow model run is '{best_run_id}' with F1 score {best_metric_val:.4f} (type: {model_type})."
             )
-            
+
             # Inspect details of best run for provenance tags
             run_details_res = self.execute_tool("mlflow_get_run", run_id=best_run_id)
             tool_results.append(run_details_res)
@@ -207,12 +194,14 @@ class MLOpsAgentOrchestrator:
             uncertainties.append("DVC tracking provenance for dataset could not be fully verified against local files.")
 
         # Step 3: Inspect current Kubernetes deployment and application health
-        k8s_dep_res = self.execute_tool("k8s_deployed_version", deployment_name="mlops-prediction-api", namespace="mlops-prod")
+        k8s_dep_res = self.execute_tool(
+            "k8s_deployed_version", deployment_name="mlops-prediction-api", namespace="mlops-prod"
+        )
         tool_results.append(k8s_dep_res)
-        
+
         k8s_diag_res = self.execute_tool("k8s_diagnose_unhealthy", namespace="mlops-prod")
         tool_results.append(k8s_diag_res)
-        
+
         deployed_version = "v1.2.0"
         k8s_healthy = True
         if k8s_dep_res.status == "SUCCESS" and k8s_dep_res.data:
@@ -230,14 +219,18 @@ class MLOpsAgentOrchestrator:
             k8s_healthy = diag.get("cluster_healthy", True)
             if not k8s_healthy:
                 unhealthy = diag.get("unhealthy_pods", [])
-                uncertainties.append(f"Cluster diagnosis detected {len(unhealthy)} unhealthy pod(s) with restart events.")
+                uncertainties.append(
+                    f"Cluster diagnosis detected {len(unhealthy)} unhealthy pod(s) with restart events."
+                )
             else:
-                known_facts.append("Kubernetes application cluster health is optimal; no crashing pods or restarts detected.")
+                known_facts.append(
+                    "Kubernetes application cluster health is optimal; no crashing pods or restarts detected."
+                )
 
         # Step 4: Query Airflow to determine status of recent training workflows
         airflow_status_res = self.execute_tool("airflow_dag_run_status", dag_id="mlops_churn_training_pipeline")
         tool_results.append(airflow_status_res)
-        
+
         airflow_state = "unknown"
         if airflow_status_res.status == "SUCCESS" and airflow_status_res.data:
             af_data = airflow_status_res.data
@@ -246,14 +239,18 @@ class MLOpsAgentOrchestrator:
             known_facts.append(
                 f"Airflow training DAG '{af_data.get('dag_id')}' latest run '{dag_run_id}' status: '{airflow_state.upper()}'."
             )
-            
+
             # Check for failed tasks
-            failed_tasks_res = self.execute_tool("airflow_failed_tasks", dag_id=af_data.get("dag_id"), dag_run_id=dag_run_id)
+            failed_tasks_res = self.execute_tool(
+                "airflow_failed_tasks", dag_id=af_data.get("dag_id"), dag_run_id=dag_run_id
+            )
             tool_results.append(failed_tasks_res)
             if failed_tasks_res.status == "SUCCESS" and failed_tasks_res.data:
                 failed_items = failed_tasks_res.data
                 if failed_items:
-                    uncertainties.append(f"Airflow workflow contains failed task(s): {[t.get('task_id') for t in failed_items]}.")
+                    uncertainties.append(
+                        f"Airflow workflow contains failed task(s): {[t.get('task_id') for t in failed_items]}."
+                    )
         else:
             uncertainties.append("Airflow workflow service was unreachable; fell back to registered execution status.")
 
@@ -271,7 +268,9 @@ class MLOpsAgentOrchestrator:
 
         if quality_gate_status == "FAILED":
             retraining_recommended = True
-            retraining_rationale = "Retraining recommended: Current candidate model failed the automated quality gate criteria."
+            retraining_rationale = (
+                "Retraining recommended: Current candidate model failed the automated quality gate criteria."
+            )
         elif has_new_data:
             retraining_recommended = True
             retraining_rationale = "Retraining recommended: DVC detected new untracked or modified raw training data."
@@ -287,7 +286,9 @@ class MLOpsAgentOrchestrator:
 
         # Formulate recommended actions
         if retraining_recommended:
-            recommended_actions.append(f"Prepare retraining run via Airflow DAG 'mlops_churn_training_pipeline' after verifying data.")
+            recommended_actions.append(
+                "Prepare retraining run via Airflow DAG 'mlops_churn_training_pipeline' after verifying data."
+            )
             recommended_actions.append("Execute 'dvc commit' and 'dvc push' if new data version is confirmed.")
         else:
             recommended_actions.append("Maintain current deployment version in Kubernetes.")
@@ -299,18 +300,18 @@ class MLOpsAgentOrchestrator:
 **User Request**: "{query}"
 
 #### 1. Known Operational Facts
-{chr(10).join(f'- {f}' for f in known_facts)}
+{chr(10).join(f"- {f}" for f in known_facts)}
 
 #### 2. Identified Uncertainties & Caveats
-{chr(10).join(f'- {u}' for u in uncertainties) if uncertainties else '- None. All operational evidence verified across external tools.'}
+{chr(10).join(f"- {u}" for u in uncertainties) if uncertainties else "- None. All operational evidence verified across external tools."}
 
 #### 3. Retraining Decision & Evidence
-- **Retraining Required**: **{'YES' if retraining_recommended else 'NO'}**
+- **Retraining Required**: **{"YES" if retraining_recommended else "NO"}**
 - **Decision Rationale**: {retraining_rationale}
 - **Safety Policy Compliance**: Retraining was **not** triggered automatically; human approval is preserved.
 
 #### 4. Recommended Next Actions
-{chr(10).join(f'- {a}' for a in recommended_actions)}
+{chr(10).join(f"- {a}" for a in recommended_actions)}
 """
 
         return MultiToolEvidence(
@@ -322,7 +323,7 @@ class MLOpsAgentOrchestrator:
             retraining_recommendation=retraining_recommended,
             retraining_rationale=retraining_rationale,
             recommended_actions=recommended_actions,
-            synthesis_markdown=synthesis
+            synthesis_markdown=synthesis,
         )
 
     def route_query(self, user_prompt: str) -> str:
@@ -374,7 +375,16 @@ class MLOpsAgentOrchestrator:
                 )
 
         # 3. Kubernetes Infrastructure Queries
-        if "kubernetes" in p or "k8s" in p or "pod" in p or "deployment" in p or "cluster" in p or "unavailable" in p or "api" in p or "health" in p:
+        if (
+            "kubernetes" in p
+            or "k8s" in p
+            or "pod" in p
+            or "deployment" in p
+            or "cluster" in p
+            or "unavailable" in p
+            or "api" in p
+            or "health" in p
+        ):
             if "why" in p or "unavailable" in p or "unhealthy" in p or "diagnos" in p or "failure" in p or "crash" in p:
                 res = self.execute_tool("k8s_diagnose_unhealthy", namespace="mlops-prod")
                 d = res.data or {}
@@ -386,7 +396,9 @@ class MLOpsAgentOrchestrator:
                     f"**Recommended Resolution**:\n{d.get('recommended_resolution')}"
                 )
             elif "version" in p or "deployed" in p:
-                res = self.execute_tool("k8s_deployed_version", deployment_name="mlops-prediction-api", namespace="mlops-prod")
+                res = self.execute_tool(
+                    "k8s_deployed_version", deployment_name="mlops-prediction-api", namespace="mlops-prod"
+                )
                 d = res.data or {}
                 return (
                     f"**Deployed Application Version**:\n"
@@ -418,7 +430,11 @@ class MLOpsAgentOrchestrator:
                 res = self.execute_tool("dvc_explain_repro", dataset_name="churn_data.csv", target_version="v1.0")
                 if res.status == "SUCCESS":
                     d = res.data
-                    return f"**Dataset Reproduction Instructions**:\n" + "\n".join(d['steps']) + f"\n\n**CLI Command**: `{d['command_to_run']}`"
+                    return (
+                        "**Dataset Reproduction Instructions**:\n"
+                        + "\n".join(d["steps"])
+                        + f"\n\n**CLI Command**: `{d['command_to_run']}`"
+                    )
             else:
                 res = self.execute_tool("dvc_list_tracked")
                 return f"**Tracked DVC Datasets**:\n{json.dumps(res.data, indent=2)}"
@@ -426,14 +442,19 @@ class MLOpsAgentOrchestrator:
         # 5. MLflow Queries
         if "experiment" in p or "mlflow" in p or "model" in p or "run" in p:
             if "compare" in p or "f1" in p or "metric" in p:
-                res = self.execute_tool("mlflow_best_candidate", experiment_name="churn-prediction-pipeline", target_metric="f1_score")
+                res = self.execute_tool(
+                    "mlflow_best_candidate", experiment_name="churn-prediction-pipeline", target_metric="f1_score"
+                )
                 if res.status == "SUCCESS":
                     d = res.data
                     ranking_lines = [
                         f"- Run `{c['run_id']}` ({c.get('model_type')}): F1={c.get('f1_score', 'N/A')}, Acc={c.get('accuracy', 'N/A')}, Gate={c.get('quality_gate')}"
-                        for c in d['candidate_ranking']
+                        for c in d["candidate_ranking"]
                     ]
-                    return f"**MLflow Model Comparison**:\n{d['selection_rationale']}\n\n**Candidate Ranking**:\n" + "\n".join(ranking_lines)
+                    return (
+                        f"**MLflow Model Comparison**:\n{d['selection_rationale']}\n\n**Candidate Ranking**:\n"
+                        + "\n".join(ranking_lines)
+                    )
             elif "best" in p:
                 res = self.execute_tool("mlflow_best_candidate")
                 if res.status == "SUCCESS":
@@ -447,11 +468,11 @@ class MLOpsAgentOrchestrator:
 
         # Default fallback
         return (
-            f"I can assist with MLOps operations across DVC, MLflow, Airflow, and Kubernetes.\n\n"
-            f"Try asking:\n"
-            f"- 'Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary.'\n"
-            f"- 'Which dataset version was used for the recent experiment?'\n"
-            f"- 'Compare the last five training runs and recommend the best candidate based on F1 score.'\n"
-            f"- 'Trigger the model training pipeline and report whether execution succeeded.'\n"
-            f"- 'Why is my prediction API unavailable?'"
+            "I can assist with MLOps operations across DVC, MLflow, Airflow, and Kubernetes.\n\n"
+            "Try asking:\n"
+            "- 'Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary.'\n"
+            "- 'Which dataset version was used for the recent experiment?'\n"
+            "- 'Compare the last five training runs and recommend the best candidate based on F1 score.'\n"
+            "- 'Trigger the model training pipeline and report whether execution succeeded.'\n"
+            "- 'Why is my prediction API unavailable?'"
         )

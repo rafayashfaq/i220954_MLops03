@@ -2,6 +2,7 @@
 Task 1: DVC Data Management Agent Tools.
 Provides structured tools for inspecting and managing versioned datasets with command restrictions.
 """
+
 import glob
 import hashlib
 import os
@@ -35,27 +36,21 @@ def _run_approved_command(command_parts: List[str], cwd: str = ".") -> str:
     """Executes a subprocess command after verifying it belongs to the approved command set."""
     if not command_parts:
         raise ValueError("Command cannot be empty")
-        
+
     binary = os.path.basename(command_parts[0]).lower().replace(".exe", "")
     if binary not in {"dvc", "git"}:
         raise PermissionError(f"Security Policy Violation: Binary '{binary}' is not permitted.")
-        
+
     if binary == "dvc":
         if len(command_parts) < 2 or command_parts[1].lower() not in APPROVED_DVC_COMMANDS:
             raise PermissionError(
                 f"Security Policy Violation: DVC command '{command_parts[1] if len(command_parts) > 1 else ''}' "
                 f"is not in the approved operations list: {sorted(list(APPROVED_DVC_COMMANDS))}"
             )
-            
+
     try:
         res = subprocess.run(
-            command_parts,
-            cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=30,
-            check=False
+            command_parts, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30, check=False
         )
         if res.returncode != 0:
             return f"Command note (code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}"
@@ -70,18 +65,18 @@ def list_tracked_datasets(root_dir: str = ".") -> List[DvcDatasetItem]:
     """Finds all datasets tracked by DVC in the repository."""
     dvc_files = glob.glob(os.path.join(root_dir, "**", "*.dvc"), recursive=True)
     datasets = []
-    
+
     for df in dvc_files:
         try:
             with open(df, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-            
+
             outs = data.get("outs", [])
             for out in outs:
                 target_path = out.get("path")
                 md5_val = out.get("md5")
                 size_val = out.get("size")
-                
+
                 # Check if file has changed
                 abs_target = os.path.join(os.path.dirname(df), target_path) if target_path else None
                 is_mod = False
@@ -90,19 +85,19 @@ def list_tracked_datasets(root_dir: str = ".") -> List[DvcDatasetItem]:
                         cur_hash = hashlib.md5(bf.read()).hexdigest()
                     if md5_val and cur_hash != md5_val:
                         is_mod = True
-                        
+
                 datasets.append(
                     DvcDatasetItem(
                         name=target_path or os.path.basename(df).replace(".dvc", ""),
                         dvc_file=os.path.relpath(df, root_dir).replace("\\", "/"),
                         md5_hash=md5_val,
                         size_bytes=size_val,
-                        is_modified=is_mod
+                        is_modified=is_mod,
                     )
                 )
         except Exception:
             continue
-            
+
     return datasets
 
 
@@ -115,7 +110,7 @@ def get_dataset_provenance(dataset_name: str = "churn_data.csv", root_dir: str =
         if dataset_name in item.name or dataset_name in item.dvc_file:
             target = item
             break
-            
+
     if not target:
         # Fallback inspection
         dvc_path = os.path.join(root_dir, "data", "raw", f"{dataset_name}.dvc")
@@ -128,7 +123,7 @@ def get_dataset_provenance(dataset_name: str = "churn_data.csv", root_dir: str =
                 dvc_file=os.path.relpath(dvc_path, root_dir).replace("\\", "/"),
                 md5_hash=outs.get("md5", "unknown_hash"),
                 size_bytes=outs.get("size", 0),
-                is_modified=False
+                is_modified=False,
             )
         else:
             raise FileNotFoundError(f"Dataset '{dataset_name}' not found in DVC tracked files.")
@@ -169,7 +164,7 @@ def get_dataset_provenance(dataset_name: str = "churn_data.csv", root_dir: str =
         version_tag="v1.0",
         remote_storage=remote_info,
         is_clean=not target.is_modified,
-        evidence_summary=summary
+        evidence_summary=summary,
     )
 
 
@@ -181,10 +176,10 @@ def compare_dataset_versions(dataset_name: str, version_a: str, version_b: str) 
         "v2.0": "e99a18c428cb38d5f260853678922e03",
         "v2.1": "f35a92a7e4b2d18903c7e0f81d592650",
     }
-    
+
     hash_a = mock_hashes.get(version_a, hashlib.md5(version_a.encode()).hexdigest())
     hash_b = mock_hashes.get(version_b, hashlib.md5(version_b.encode()).hexdigest())
-    
+
     status = "IDENTICAL" if hash_a == hash_b else "MODIFIED"
     details = (
         f"Comparison of '{dataset_name}' between '{version_a}' (MD5: {hash_a}) "
@@ -200,7 +195,7 @@ def compare_dataset_versions(dataset_name: str, version_a: str, version_b: str) 
         hash_a=hash_a,
         hash_b=hash_b,
         status=status,
-        details=details
+        details=details,
     )
 
 
@@ -208,31 +203,29 @@ def detect_data_changes(dataset_path: Optional[str] = None, root_dir: str = ".")
     """Detects whether tracked data files have changed relative to their DVC tracking hashes."""
     tracked = list_tracked_datasets(root_dir)
     changed = [item.name for item in tracked if item.is_modified]
-    
+
     status_output = _run_approved_command(["dvc", "status"], cwd=root_dir)
-    
+
     return {
         "has_changes": len(changed) > 0 or "modified" in status_output.lower(),
         "modified_datasets": changed,
         "dvc_status_output": status_output,
-        "total_tracked": len(tracked)
+        "total_tracked": len(tracked),
     }
 
 
-def explain_reproduction(dataset_name: str, target_version: str, git_commit: Optional[str] = None) -> DvcReproductionPlan:
+def explain_reproduction(
+    dataset_name: str, target_version: str, git_commit: Optional[str] = None
+) -> DvcReproductionPlan:
     """Explains how to reproduce a previous dataset version step-by-step."""
     commit = git_commit or ("5246f7b" if "1" in target_version else "a4c92e1")
     steps = [
         f"Step 1: Check out the corresponding Git commit: 'git checkout {commit}'",
         f"Step 2: Check out the DVC pointer file for '{dataset_name}': 'dvc checkout data/raw/{dataset_name}.dvc'",
-        f"Step 3: Pull remote cache objects if missing locally: 'dvc pull local_storage'",
-        f"Step 4: Verify reproducibility by running: 'dvc repro'"
+        "Step 3: Pull remote cache objects if missing locally: 'dvc pull local_storage'",
+        "Step 4: Verify reproducibility by running: 'dvc repro'",
     ]
     command = f"git checkout {commit} && dvc checkout && dvc pull"
     return DvcReproductionPlan(
-        dataset_name=dataset_name,
-        target_version=target_version,
-        git_commit=commit,
-        steps=steps,
-        command_to_run=command
+        dataset_name=dataset_name, target_version=target_version, git_commit=commit, steps=steps, command_to_run=command
     )

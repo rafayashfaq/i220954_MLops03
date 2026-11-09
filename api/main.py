@@ -3,6 +3,7 @@ FastAPI Inference Service for Customer Churn Prediction.
 Containerized microservice deployed to Kubernetes with health probes,
 model serving, structured logging, and version reporting.
 """
+
 import os
 import time
 import joblib
@@ -15,7 +16,7 @@ from pydantic import BaseModel, Field
 app = FastAPI(
     title="MLOps Production Prediction API",
     version=os.getenv("APP_VERSION", "v1.2.0"),
-    description="High-performance inference microservice for ML predictions"
+    description="High-performance inference microservice for ML predictions",
 )
 
 # Global model container
@@ -62,7 +63,7 @@ def root():
         "service": "MLOps Prediction Service",
         "status": "UP",
         "app_version": APP_VERSION,
-        "environment": ENVIRONMENT
+        "environment": ENVIRONMENT,
     }
 
 
@@ -74,7 +75,7 @@ def health_check():
         "model_loaded": MODEL is not None or os.path.exists(MODEL_PATH),
         "app_version": APP_VERSION,
         "environment": ENVIRONMENT,
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }
 
 
@@ -87,7 +88,7 @@ def get_service_version():
         "model_name": MODEL_NAME,
         "model_path": MODEL_PATH,
         "model_loaded": MODEL is not None,
-        "environment": ENVIRONMENT
+        "environment": ENVIRONMENT,
     }
 
 
@@ -95,17 +96,21 @@ def get_service_version():
 def predict_churn(request: ChurnPredictionRequest):
     """Generates customer churn prediction."""
     start_time = time.time()
-    
+
     # Feature array
-    features = pd.DataFrame([{
-        "account_age_months": request.account_age_months,
-        "monthly_charges": request.monthly_charges,
-        "total_logins": request.total_logins,
-        "support_tickets": request.support_tickets,
-        "service_failures": request.service_failures,
-        "latency_avg_ms": request.latency_avg_ms
-    }])
-    
+    features = pd.DataFrame(
+        [
+            {
+                "account_age_months": request.account_age_months,
+                "monthly_charges": request.monthly_charges,
+                "total_logins": request.total_logins,
+                "support_tickets": request.support_tickets,
+                "service_failures": request.service_failures,
+                "latency_avg_ms": request.latency_avg_ms,
+            }
+        ]
+    )
+
     if MODEL is not None:
         try:
             pred = int(MODEL.predict(features)[0])
@@ -128,5 +133,5 @@ def predict_churn(request: ChurnPredictionRequest):
         churn_probability=round(proba, 4),
         risk_level=risk,
         model_version=APP_VERSION,
-        inference_latency_ms=round(latency_ms, 2)
+        inference_latency_ms=round(latency_ms, 2),
     )

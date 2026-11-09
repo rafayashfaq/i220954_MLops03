@@ -1,6 +1,7 @@
 """
 Integration tests for Task 5: Multi-Tool Agent Orchestrator.
 """
+
 import pytest
 from agent.orchestrator import MLOpsAgentOrchestrator
 from agent.schemas import MultiToolEvidence
@@ -33,7 +34,7 @@ def test_mandatory_integration_scenario(orchestrator):
     """
     evidence = orchestrator.run_mandatory_scenario()
     assert isinstance(evidence, MultiToolEvidence)
-    
+
     # 1. Multi-tool results collected
     assert len(evidence.tool_results) >= 4
     tool_names = [tr.tool_name for tr in evidence.tool_results]

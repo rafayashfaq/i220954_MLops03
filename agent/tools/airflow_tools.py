@@ -4,6 +4,7 @@ Provides structured tools to list DAGs, check DAG run status, trigger approved t
 identify failed tasks, and retrieve task-level execution diagnostics.
 Interacts with the Airflow REST API (with authenticated requests and local fallback).
 """
+
 import datetime
 import json
 import logging
@@ -24,11 +25,7 @@ AIRFLOW_BASE_URL = os.getenv("AIRFLOW_BASE_URL", "http://localhost:8080/api/v1")
 AIRFLOW_USER = os.getenv("AIRFLOW_USER", "airflow")
 AIRFLOW_PASSWORD = os.getenv("AIRFLOW_PASSWORD", "airflow")
 
-APPROVED_DAGS = {
-    "mlops_churn_training_pipeline",
-    "churn-training-pipeline",
-    "model_retraining_dag"
-}
+APPROVED_DAGS = {"mlops_churn_training_pipeline", "churn-training-pipeline", "model_retraining_dag"}
 
 # In-memory execution registry for standalone / mock execution
 _LOCAL_DAG_RUNS: Dict[str, Dict[str, Any]] = {
@@ -44,8 +41,8 @@ _LOCAL_DAG_RUNS: Dict[str, Dict[str, Any]] = {
             "preprocess_data": {"state": "success", "try": 1, "duration": 5.1},
             "train_model": {"state": "success", "try": 1, "duration": 18.4},
             "evaluate_and_log_mlflow": {"state": "success", "try": 1, "duration": 12.0},
-            "apply_model_quality_gate": {"state": "success", "try": 1, "duration": 1.5}
-        }
+            "apply_model_quality_gate": {"state": "success", "try": 1, "duration": 1.5},
+        },
     },
     "run_failed_quality_002": {
         "dag_id": "mlops_churn_training_pipeline",
@@ -65,10 +62,10 @@ _LOCAL_DAG_RUNS: Dict[str, Dict[str, Any]] = {
                 "duration": 2.1,
                 "error": "QUALITY GATE REJECTED: Model F1 (0.6216) is below min_f1 threshold (0.7000). Promotion halted.",
                 "category": "QualityGateThresholdFailure",
-                "recommendation": "Inspect dataset feature distributions for drift or tune hyperparameters (e.g. increase tree depth)."
-            }
-        }
-    }
+                "recommendation": "Inspect dataset feature distributions for drift or tune hyperparameters (e.g. increase tree depth).",
+            },
+        },
+    },
 }
 
 
@@ -91,7 +88,7 @@ def list_dags() -> List[AirflowDagItem]:
                         is_paused=d.get("is_paused", False),
                         is_active=d.get("is_active", True),
                         description=d.get("description"),
-                        timetable_description=d.get("timetable_description")
+                        timetable_description=d.get("timetable_description"),
                     )
                 )
             return dag_items
@@ -105,12 +102,14 @@ def list_dags() -> List[AirflowDagItem]:
             is_paused=False,
             is_active=True,
             description="Automated ML training pipeline with DVC, MLflow, and Quality Gate verification",
-            timetable_description="@manual or on-demand trigger"
+            timetable_description="@manual or on-demand trigger",
         )
     ]
 
 
-def get_dag_run_status(dag_id: str = "mlops_churn_training_pipeline", dag_run_id: Optional[str] = None) -> AirflowDagRunStatus:
+def get_dag_run_status(
+    dag_id: str = "mlops_churn_training_pipeline", dag_run_id: Optional[str] = None
+) -> AirflowDagRunStatus:
     """Retrieves execution status for a given DAG and run ID."""
     try:
         url = f"{AIRFLOW_BASE_URL}/dags/{dag_id}/dagRuns"
@@ -131,7 +130,7 @@ def get_dag_run_status(dag_id: str = "mlops_churn_training_pipeline", dag_run_id
                     execution_date=target["execution_date"],
                     start_date=target.get("start_date"),
                     end_date=target.get("end_date"),
-                    conf=target.get("conf", {})
+                    conf=target.get("conf", {}),
                 )
     except Exception:
         pass
@@ -150,13 +149,12 @@ def get_dag_run_status(dag_id: str = "mlops_churn_training_pipeline", dag_run_id
         execution_date=item["execution_date"],
         start_date=item["start_date"],
         end_date=item["end_date"],
-        conf=item.get("conf", {})
+        conf=item.get("conf", {}),
     )
 
 
 def trigger_training_dag(
-    dag_id: str = "mlops_churn_training_pipeline",
-    conf: Optional[Dict[str, Any]] = None
+    dag_id: str = "mlops_churn_training_pipeline", conf: Optional[Dict[str, Any]] = None
 ) -> AirflowDagRunStatus:
     """Triggers an approved training DAG execution."""
     if dag_id not in APPROVED_DAGS:
@@ -180,7 +178,7 @@ def trigger_training_dag(
                 state=data["state"],
                 execution_date=data.get("execution_date", now_iso),
                 start_date=data.get("start_date", now_iso),
-                conf=conf
+                conf=conf,
             )
     except Exception:
         pass
@@ -196,21 +194,18 @@ def trigger_training_dag(
         "conf": conf,
         "tasks": {
             "validate_dataset": {"state": "success", "try": 1, "duration": 2.5},
-            "preprocess_data": {"state": "running", "try": 1, "duration": 1.2}
-        }
+            "preprocess_data": {"state": "running", "try": 1, "duration": 1.2},
+        },
     }
 
     return AirflowDagRunStatus(
-        dag_id=dag_id,
-        dag_run_id=run_id,
-        state="running",
-        execution_date=now_iso,
-        start_date=now_iso,
-        conf=conf
+        dag_id=dag_id, dag_run_id=run_id, state="running", execution_date=now_iso, start_date=now_iso, conf=conf
     )
 
 
-def get_failed_tasks(dag_id: str = "mlops_churn_training_pipeline", dag_run_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_failed_tasks(
+    dag_id: str = "mlops_churn_training_pipeline", dag_run_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
     """Identifies any failed tasks in the specified or most recent DAG run."""
     run_status = get_dag_run_status(dag_id, dag_run_id)
     target_run_id = run_status.dag_run_id
@@ -221,22 +216,24 @@ def get_failed_tasks(dag_id: str = "mlops_churn_training_pipeline", dag_run_id: 
     if run_data and "tasks" in run_data:
         for t_name, t_info in run_data["tasks"].items():
             if t_info.get("state") == "failed":
-                failed.append({
-                    "dag_id": dag_id,
-                    "dag_run_id": target_run_id,
-                    "task_id": t_name,
-                    "state": "failed",
-                    "try_number": t_info.get("try", 1),
-                    "error": t_info.get("error", "Task execution failed"),
-                    "recommendation": t_info.get("recommendation", "Review task execution logs")
-                })
+                failed.append(
+                    {
+                        "dag_id": dag_id,
+                        "dag_run_id": target_run_id,
+                        "task_id": t_name,
+                        "state": "failed",
+                        "try_number": t_info.get("try", 1),
+                        "error": t_info.get("error", "Task execution failed"),
+                        "recommendation": t_info.get("recommendation", "Review task execution logs"),
+                    }
+                )
     return failed
 
 
 def get_task_diagnostics(
     dag_id: str = "mlops_churn_training_pipeline",
     dag_run_id: str = "run_failed_quality_002",
-    task_id: str = "apply_model_quality_gate"
+    task_id: str = "apply_model_quality_gate",
 ) -> AirflowTaskDiagnostic:
     """Retrieves deep task execution diagnostics, failure category, and recommended fixes."""
     run_data = _LOCAL_DAG_RUNS.get(dag_run_id, {})
@@ -259,5 +256,5 @@ def get_task_diagnostics(
         end_date=run_data.get("end_date"),
         error_message=err,
         failure_category=category,
-        recommended_fix=rec
+        recommended_fix=rec,
     )

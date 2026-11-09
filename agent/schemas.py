@@ -1,6 +1,7 @@
 """
 Pydantic Schemas for Structured Tool Inputs, Outputs, and Multi-Tool Agent Evidence.
 """
+
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,7 @@ from pydantic import BaseModel, Field
 # ==========================================
 # Task 1: DVC Data Management Schemas
 # ==========================================
+
 
 class DvcDatasetItem(BaseModel):
     name: str = Field(..., description="Dataset name or path")
@@ -51,6 +53,7 @@ class DvcReproductionPlan(BaseModel):
 # Task 2: MLflow Experiment Intelligence Schemas
 # ==========================================
 
+
 class MLflowRunSummary(BaseModel):
     run_id: str
     experiment_id: str
@@ -88,6 +91,7 @@ class MLflowModelRegistryDetails(BaseModel):
 # Task 3: Apache Airflow Workflow Schemas
 # ==========================================
 
+
 class AirflowDagItem(BaseModel):
     dag_id: str
     is_paused: bool
@@ -123,6 +127,7 @@ class AirflowTaskDiagnostic(BaseModel):
 # ==========================================
 # Task 4: Kubernetes Operations Schemas
 # ==========================================
+
 
 class K8sPodItem(BaseModel):
     name: str
@@ -166,6 +171,7 @@ class K8sStateChangeRequest(BaseModel):
 # ==========================================
 # Task 5: Intelligent Multi-Tool Agent Schemas
 # ==========================================
+
 
 class ToolExecutionResult(BaseModel):
     tool_name: str

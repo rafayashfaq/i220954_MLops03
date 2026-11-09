@@ -3,6 +3,7 @@ Task 4: Kubernetes Operations Agent Tools.
 Provides inspection, diagnostic, and state management operations for containerized ML workloads.
 Enforces namespace restrictions and mandatory user confirmation for any cluster state changes.
 """
+
 import json
 import logging
 import os
@@ -31,7 +32,7 @@ _MOCK_PODS: List[Dict[str, Any]] = [
         "age": "3d4h",
         "node": "node-worker-01",
         "image": "mlops-prediction-api:v1.2.0",
-        "logs": "2026-11-09T20:00:00Z INFO [uvicorn] Application startup complete.\n2026-11-09T20:01:00Z INFO GET /health 200 OK\n2026-11-09T20:05:00Z INFO POST /predict 200 OK duration=4.2ms"
+        "logs": "2026-11-09T20:00:00Z INFO [uvicorn] Application startup complete.\n2026-11-09T20:01:00Z INFO GET /health 200 OK\n2026-11-09T20:05:00Z INFO POST /predict 200 OK duration=4.2ms",
     },
     {
         "name": "mlops-prediction-api-7956cf574b-xyz89",
@@ -42,7 +43,7 @@ _MOCK_PODS: List[Dict[str, Any]] = [
         "age": "3d4h",
         "node": "node-worker-02",
         "image": "mlops-prediction-api:v1.2.0",
-        "logs": "2026-11-09T20:00:00Z INFO [uvicorn] Application startup complete.\n2026-11-09T20:02:00Z INFO GET /health 200 OK\n2026-11-09T20:06:00Z INFO POST /predict 200 OK duration=3.8ms"
+        "logs": "2026-11-09T20:00:00Z INFO [uvicorn] Application startup complete.\n2026-11-09T20:02:00Z INFO GET /health 200 OK\n2026-11-09T20:06:00Z INFO POST /predict 200 OK duration=3.8ms",
     },
     {
         "name": "mlops-prediction-api-broken-5d8f769b-flk32",
@@ -53,8 +54,8 @@ _MOCK_PODS: List[Dict[str, Any]] = [
         "age": "42m",
         "node": "node-worker-01",
         "image": "mlops-prediction-api:v1.2.1-failing",
-        "logs": "Traceback (most recent call last):\n  File 'api/main.py', line 12, in <module>\n    import uninstalled_module\nModuleNotFoundError: No module named 'uninstalled_module'\nContainer exited with code 1."
-    }
+        "logs": "Traceback (most recent call last):\n  File 'api/main.py', line 12, in <module>\n    import uninstalled_module\nModuleNotFoundError: No module named 'uninstalled_module'\nContainer exited with code 1.",
+    },
 ]
 
 _MOCK_DEPLOYMENT = {
@@ -65,7 +66,7 @@ _MOCK_DEPLOYMENT = {
     "replicas_available": 2,
     "image": "mlops-prediction-api:v1.2.0",
     "app_version": "v1.2.0",
-    "strategy": "RollingUpdate"
+    "strategy": "RollingUpdate",
 }
 
 
@@ -84,7 +85,9 @@ def _run_kubectl(args: List[str]) -> Optional[str]:
 def list_pods(namespace: str = "mlops-prod", include_all: bool = False) -> List[K8sPodItem]:
     """Lists all Pods running in the specified namespace."""
     if namespace not in APPROVED_K8S_NAMESPACES:
-        raise PermissionError(f"Access Denied: Namespace '{namespace}' is not authorized. Allowed: {sorted(list(APPROVED_K8S_NAMESPACES))}")
+        raise PermissionError(
+            f"Access Denied: Namespace '{namespace}' is not authorized. Allowed: {sorted(list(APPROVED_K8S_NAMESPACES))}"
+        )
 
     out = _run_kubectl(["get", "pods", "-n", namespace, "-o", "json"])
     if out:
@@ -109,7 +112,7 @@ def list_pods(namespace: str = "mlops-prod", include_all: bool = False) -> List[
                         restarts=restarts,
                         age=p["metadata"].get("creationTimestamp", "unknown"),
                         node=p["spec"].get("nodeName"),
-                        image=image
+                        image=image,
                     )
                 )
             return items
@@ -131,7 +134,7 @@ def list_pods(namespace: str = "mlops-prod", include_all: bool = False) -> List[
                     restarts=mp["restarts"],
                     age=mp["age"],
                     node=mp["node"],
-                    image=mp["image"]
+                    image=mp["image"],
                 )
             )
     return result
@@ -163,7 +166,7 @@ def list_deployments(namespace: str = "mlops-prod") -> List[K8sDeploymentItem]:
                         replicas_available=status_obj.get("availableReplicas", 0),
                         image=image,
                         app_version=version,
-                        strategy=spec.get("strategy", {}).get("type", "RollingUpdate")
+                        strategy=spec.get("strategy", {}).get("type", "RollingUpdate"),
                     )
                 )
             return items
@@ -180,7 +183,7 @@ def list_deployments(namespace: str = "mlops-prod") -> List[K8sDeploymentItem]:
             replicas_available=_MOCK_DEPLOYMENT["replicas_available"],
             image=_MOCK_DEPLOYMENT["image"],
             app_version=_MOCK_DEPLOYMENT["app_version"],
-            strategy=_MOCK_DEPLOYMENT["strategy"]
+            strategy=_MOCK_DEPLOYMENT["strategy"],
         )
     ]
 
@@ -192,12 +195,7 @@ def get_pod_status_and_logs(pod_name: str, namespace: str = "mlops-prod", tail_l
 
     out_logs = _run_kubectl(["logs", pod_name, "-n", namespace, f"--tail={tail_lines}"])
     if out_logs is not None:
-        return {
-            "pod_name": pod_name,
-            "namespace": namespace,
-            "logs": out_logs,
-            "source": "live_cluster"
-        }
+        return {"pod_name": pod_name, "namespace": namespace, "logs": out_logs, "source": "live_cluster"}
 
     for p in _MOCK_PODS:
         if p["name"] == pod_name and p["namespace"] == namespace:
@@ -206,7 +204,7 @@ def get_pod_status_and_logs(pod_name: str, namespace: str = "mlops-prod", tail_l
                 "namespace": namespace,
                 "status": p["status"],
                 "logs": p["logs"],
-                "source": "simulated_cluster"
+                "source": "simulated_cluster",
             }
 
     return {
@@ -214,7 +212,7 @@ def get_pod_status_and_logs(pod_name: str, namespace: str = "mlops-prod", tail_l
         "namespace": namespace,
         "status": "Unknown",
         "logs": "No logs recorded for requested pod.",
-        "source": "fallback"
+        "source": "fallback",
     }
 
 
@@ -238,7 +236,7 @@ def inspect_service(service_name: str = "mlops-prediction-service", namespace: s
         "ports": [{"name": "http", "port": 80, "target_port": 8000, "protocol": "TCP"}],
         "selector": {"app": "prediction-api"},
         "status": "Active",
-        "endpoints_count": 2
+        "endpoints_count": 2,
     }
 
 
@@ -266,12 +264,10 @@ def diagnose_unhealthy_pods(namespace: str = "mlops-prod") -> K8sDiagnosisReport
                 restarts=p["restarts"],
                 age=p["age"],
                 node=p["node"],
-                image=p["image"]
+                image=p["image"],
             )
             unhealthy.append(item)
-            events.append(
-                f"Warning BackOff pod/{p['name']} Back-off restarting failed container prediction-container"
-            )
+            events.append(f"Warning BackOff pod/{p['name']} Back-off restarting failed container prediction-container")
 
     if unhealthy:
         root_cause = (
@@ -291,13 +287,12 @@ def diagnose_unhealthy_pods(namespace: str = "mlops-prod") -> K8sDiagnosisReport
         unhealthy_pods=unhealthy,
         recent_events=events,
         root_cause_analysis=root_cause,
-        recommended_resolution=resolution
+        recommended_resolution=resolution,
     )
 
 
 def get_deployed_application_version(
-    deployment_name: str = "mlops-prediction-api",
-    namespace: str = "mlops-prod"
+    deployment_name: str = "mlops-prediction-api", namespace: str = "mlops-prod"
 ) -> Dict[str, Any]:
     """Reports the currently deployed application and model version."""
     deployments = list_deployments(namespace=namespace)
@@ -310,9 +305,9 @@ def get_deployed_application_version(
                 "image": d.image,
                 "replicas_ready": d.replicas_ready,
                 "replicas_desired": d.replicas_desired,
-                "status": "Healthy" if d.replicas_ready == d.replicas_desired else "Degraded"
+                "status": "Healthy" if d.replicas_ready == d.replicas_desired else "Degraded",
             }
-            
+
     return {
         "deployment_name": deployment_name,
         "namespace": namespace,
@@ -320,7 +315,7 @@ def get_deployed_application_version(
         "image": "mlops-prediction-api:v1.2.0",
         "replicas_ready": 2,
         "replicas_desired": 2,
-        "status": "Healthy"
+        "status": "Healthy",
     }
 
 
@@ -350,5 +345,5 @@ def execute_cluster_state_change(request: K8sStateChangeRequest) -> Dict[str, An
         "operation": request.operation,
         "target_resource": request.target_resource,
         "namespace": request.namespace,
-        "message": f"Cluster state change '{request.operation}' successfully applied to {request.target_resource}."
+        "message": f"Cluster state change '{request.operation}' successfully applied to {request.target_resource}.",
     }

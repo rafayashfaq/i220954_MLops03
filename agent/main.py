@@ -3,6 +3,7 @@ Main Entry Point for the MLOps AI Agent.
 Supports interactive conversational CLI, single-query command execution,
 automated evaluation scenario demonstrations, and FastAPI serving.
 """
+
 import argparse
 import json
 import os
@@ -24,7 +25,7 @@ orchestrator = MLOpsAgentOrchestrator()
 app = FastAPI(
     title="MLOps AI Agent Service",
     description="Conversational agent for DVC, MLflow, Airflow, and Kubernetes operations",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 
@@ -58,7 +59,7 @@ def run_interactive_cli():
     print("🤖 Production MLOps AI Agent (DVC, MLflow, Airflow, Kubernetes)")
     print("Type your operational request or 'exit' to quit.")
     print("=" * 70)
-    
+
     while True:
         try:
             user_input = input("\nMLOps-Agent> ").strip()
@@ -67,7 +68,7 @@ def run_interactive_cli():
             if user_input.lower() in {"exit", "quit", "q"}:
                 print("Exiting MLOps Agent. Goodbye!")
                 break
-                
+
             response = orchestrator.route_query(user_input)
             print("\n" + response)
         except (KeyboardInterrupt, EOFError):
@@ -83,15 +84,27 @@ def run_demonstration_suite():
 
     scenarios = [
         ("Scenario 1: Dataset Provenance (DVC)", "Which dataset version and Git commit was used for the recent model?"),
-        ("Scenario 2: Model Selection (MLflow)", "Compare the last five training runs and recommend the best candidate based on F1 score."),
-        ("Scenario 3: Pipeline Execution (Airflow)", "Trigger the model training pipeline and report whether execution succeeded."),
-        ("Scenario 4: Deployment Diagnosis (Kubernetes)", "Why is my prediction API unavailable? Investigate cluster health."),
-        ("Scenario 5: Multi-Tool Reasoning (Full Integration)", "Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary.")
+        (
+            "Scenario 2: Model Selection (MLflow)",
+            "Compare the last five training runs and recommend the best candidate based on F1 score.",
+        ),
+        (
+            "Scenario 3: Pipeline Execution (Airflow)",
+            "Trigger the model training pipeline and report whether execution succeeded.",
+        ),
+        (
+            "Scenario 4: Deployment Diagnosis (Kubernetes)",
+            "Why is my prediction API unavailable? Investigate cluster health.",
+        ),
+        (
+            "Scenario 5: Multi-Tool Reasoning (Full Integration)",
+            "Find the best recent model, identify the dataset version used to train it, check the deployment status, and explain whether retraining is necessary.",
+        ),
     ]
 
     for title, prompt in scenarios:
         print(f"\n🔹 {title}")
-        print(f"User Prompt: \"{prompt}\"")
+        print(f'User Prompt: "{prompt}"')
         print("-" * 70)
         output = orchestrator.route_query(prompt)
         print(output)
@@ -108,6 +121,7 @@ def main():
 
     if args.serve:
         import uvicorn
+
         print(f"Starting MLOps Agent API server on port {args.port}...")
         uvicorn.run("agent.main:app", host="0.0.0.0", port=args.port, reload=False)
     elif args.demo:

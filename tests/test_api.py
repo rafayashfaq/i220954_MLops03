@@ -1,6 +1,7 @@
 """
 Unit tests for FastAPI Inference Microservice (api/main.py).
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from api.main import app
@@ -32,7 +33,7 @@ def test_api_prediction_endpoint():
         "total_logins": 18,
         "support_tickets": 1,
         "service_failures": 0,
-        "latency_avg_ms": 140.0
+        "latency_avg_ms": 140.0,
     }
     response = client.post("/predict", json=payload)
     assert response.status_code == 200
@@ -48,7 +49,7 @@ def test_api_prediction_validation_error():
     """Invalid input schema must return HTTP 422 Unprocessable Entity."""
     bad_payload = {
         "account_age_months": -5,  # Invalid negative age
-        "monthly_charges": "not-a-number"
+        "monthly_charges": "not-a-number",
     }
     response = client.post("/predict", json=bad_payload)
     assert response.status_code == 422
