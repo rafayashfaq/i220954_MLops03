@@ -1,0 +1,12 @@
+{
+  "accuracy": 0.72,
+  "precision": 0.6764705882352942,
+  "recall": 0.575,
+  "f1_score": 0.6216216216216216,
+  "roc_auc": 0.73,
+  "quality_gate": "FAILED",
+  "run_id": "09b367f8a6864e06aa89a05f6e3efff7",
+  "git_commit": "e7db43a",
+  "dvc_hash": "a86b256ac0f3406c13b18c7fd74d734b",
+  "dataset_version": "v1.0"
+}
