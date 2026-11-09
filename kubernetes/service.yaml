@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlops-prediction-service
+  namespace: mlops-prod
+  labels:
+    app: prediction-api
+spec:
+  type: ClusterIP
+  selector:
+    app: prediction-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      name: http

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-prediction-config
+  namespace: mlops-prod
+  labels:
+    app: prediction-api
+    environment: production
+data:
+  ENVIRONMENT: "production"
+  MODEL_NAME: "churn-classifier-prod"
+  APP_VERSION: "v1.2.0"
+  LOG_LEVEL: "INFO"
+  MIN_F1_THRESHOLD: "0.70"
+  SERVICE_PORT: "8000"
