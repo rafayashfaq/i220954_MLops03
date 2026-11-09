@@ -1,0 +1,20 @@
+stages:
+  preprocess:
+    cmd: python training/preprocess.py --input data/raw/churn_data.csv --output-dir data/processed
+    deps:
+      - data/raw/churn_data.csv
+      - training/preprocess.py
+    outs:
+      - data/processed/train.csv
+      - data/processed/test.csv
+  train:
+    cmd: python training/train.py --train-path data/processed/train.csv --test-path data/processed/test.csv --model-type random_forest
+    deps:
+      - data/processed/train.csv
+      - data/processed/test.csv
+      - training/train.py
+    outs:
+      - models/churn_model.pkl
+    metrics:
+      - models/metrics.json:
+          cache: false
